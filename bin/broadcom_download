@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+###
+### SCRIPTNAME [ options ] - DESCRIPTION
+###
+###	-h | --help		display this message and exit
+###	-v | --verbose		provide extra comments for verbose output
+###	-d | --debug		run the script in complete verbose mode for debugging purposes
+###
+###	-k | --apikey		specify the API user and secret to authentication (XXXXX:YYYYY)
+###
+###	-t | --timerange	specify start and final times ( NNNNNNNNNNN:MMMMMMMMMMMM )
+###	-n | --number		specify the number of days to compare against
+###
+###	-a | --archivedir	specify where the zip files will be stored
+###	-s | --stagingdir	specify where the zip file image is unpacked
+###
+### Starting_Directory: BASEDIR
+###
+### NOTE: providing no time range will result in trying to download last N days in 1 day chunks
+###
+
+display_help () {
+
+  scriptname=$( basename "$0" ) 
+  startdir=$( ls -Ld "$PWD"  ) 
+  description="A wrapper for downloading and staging Broadcom log files"
+
+  ( 
+    grep -i -E '^###' | sed  's/^###//g' | \
+    sed "s/SCRIPTNAME/$scriptname/g" | \
+    sed "s#BASEDIR#$startdir#g"  | \
+    sed "s#DESCRIPTION#$description#g" 
+  ) < "${0}"
+  exit 0
+
+}
+
+initialize_environment () {
+
+  ${debugflag}
+
+  PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+  export PATH
+
+  umask 022
+
+  base=$( ls -Ld "$PWD" )				&& export base
+
+  scriptname="${0%.*}"					&& export scriptname
+  scripttag=$( basename "$scriptname" )         	&& export scripttag
+
+  cmddir=$( dirname "${scriptname}" )           	&& export cmddir
+  actiondir=$( cd "$cmddir" ; pwd -P )          	&& export actiondir
+  bindir=$( dirname "${actiondir}" )            	&& export bindir
+  basedir=$( dirname "${bindir}" )             	 	&& export basedir
+
+  vardir="/var/tmp/downloads"				&& export vardir
+  dirstaging="${dir_staging:-"$vardir/staging"}"	&& export dirstaging
+  dirarchive="${dir_archive:-"$vardir/archive"}"	&& export dirarchive
+
+  dstamp=$(date '+%Y%m%d')         			&& export dstamp
+  tstamp=$(date '+%H%M%S')          			&& export tstamp
+  lstamp="${dstamp}.${tstamp}"				&& export lstamp
+
+  verboseflag=${verboseflag:-"false"}			&& export verboseflag
+  curlcmd=$( which curl )				&& export curlcmd
+
+  daylimit="${num_days:-"7"}"				&& export daylimit
+  sleeptime="${sleep_time:-"60"}"			&& export sleeptime
+
+  oneday=86400000					&& export oneday
+
+  timerange="${time_range:-"undefined:undefined"}"	&& export timerange
+  credentials="${api_key:-"undefined:undefined"}"	&& export credentials
+
+  PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+  export PATH
+
+  [[ ${BASH_VERSION%%.*} -ge 4 ]] || {
+    complain_and_exit 1 "script requires bash 4 or higher to run"
+  }
+
+  mkdir -p ${vardir} ${dirstaging} ${dirarchive}
+
+}
+
+complain_and_exit () {
+
+  exitmessage="$2"
+  exitstatus="$1"
+  echo "ERROR: ${exitmessage}"
+  exit "${exitstatus}"
+
+}
+
+initialize_credentials () {
+
+  ${debugflag}
+
+  [[ $credentials = "undefined:undefined" ]] && {
+    complain_and_exit 6 "no supplied credentials"
+  }
+
+  username=$( echo $credentials | awk -F: '{print$1}' )
+  authuser="X-APIUsername: $username"
+  export authuser
+
+  password=$( echo $credentials | awk -F: '{print$2}' )
+  authpass="X-APIPassword: $password"
+  export authpass
+
+}
+
+download_and_unpack () {
+
+  ${debugflag}
+
+  urlbase='https://portal.threatpulse.com/reportpod/logs/sync?'
+
+  startdate=$1
+  finaldate=$2
+
+  urlopts="startDate=${startdate}&endDate=${finaldate}&token=none"
+
+  outfile="$dirarchive/broadcom_wss_events.$startdate.$finaldate.zip"
+
+  [ -f $outfile ] || {
+    "${curlcmd}" -s -H "${authuser}" -H "${authpass}" "${urlbase}${urlopts}" -o "${outfile}"
+    exitstatus=$?
+    [[ $exitstatus -eq 0 ]] && {
+       filesizecheck=$( du -sk $outfile 2>/dev/null | awk '{print$1}' )
+       [[ $filesizecheck -ge 10240 ]] && {
+         cd $dirstaging
+         unzip $outfile -d $dirstaging > /dev/null 2>&
+       }
+       [[ $filesizecheck -lt 10240 ]] && {
+         rm -f $outfile
+       }
+    }
+    [[ $exitstatus -eq 0 ]] || {
+      rm -f $outfile
+    }
+  }
+}
+
+initialize_time_ranges () {
+
+  ${debugflag}
+
+  [[ $timerange = "undefined:undefined" ]] || {
+    startdate=$( echo $time_range | awk -F: '{print$1}' )
+    finaldate=$( echo $time_range | awk -F: '{print$2}' )
+    download_and_unpack $startdate $finaldate
+  }
+
+  [[ $timerange = "undefined:undefined" ]] && {
+    finaldate=$(( $( gdate -d "$(date +%T)" +%s ) * 1000 ))
+    startdate=$(( $finaldate - $oneday ))
+    for ((counter = 1 ; counter < $daylimit ; counter++)); 
+    do
+      finaldate=$(( $finaldate - $oneday * $counter ))
+      startdate=$(( $startdate - $oneday * $counter ))
+      download_and_unpack $startdate $finaldate
+      sleep $sleeptime
+    done
+  }
+
+}
+
+main_logic () { 
+
+  initialize_environment
+  initialize_credentials
+  initialize_time_ranges
+
+}
+  
+while getopts "hvdk:t:n:a:s:" options;
+do
+  case "${options}" in
+    h) display_help ; exit 0 ;;
+    v) verboseflag='true'	; export verboseflag ;;
+    d) debugflag='set -x'	; export debugflag ;;
+    k) api_key=$OPTARG		; export api_key ;;
+    t) time_range=$OPTARG	; export time_range ;;
+    n) num_days=$OPTARG		; export num_days ;;
+    a) dir_archive=$OPTARG	; export dir_archive ;;
+    s) dir_staging=$OPTARG	; export dir_staging ;;
+    *) display_help ; exit 0 ;;
+  esac
+done
+shift $((OPTIND-1))
+
+main_logic
