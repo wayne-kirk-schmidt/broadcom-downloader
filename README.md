@@ -25,7 +25,7 @@ Please follow the following steps to install:
     
     4. Clone this repo using the following command:
     
-       git clone git@github.com:wks-sumo-logic/sumocli-bash-collectors.git
+       git clone https://github.com/wks-sumo-logic/download_broadcom
 
        This will create a new folder.
     
