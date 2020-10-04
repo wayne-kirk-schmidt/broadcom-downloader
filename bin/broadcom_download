@@ -132,6 +132,11 @@ download_and_unpack () {
        [[ $filesizecheck -ge 10240 ]] && {
          cd $dirstaging
          unzip $outfile -d $dirstaging > /dev/null 2>&1
+         zipfiles=$( ls -1d $dirstaging/*.gz )
+         for zipfile in ${zipfiles}
+         do
+           gunzip -f $zipfile
+         done
        }
        [[ $filesizecheck -lt 10240 ]] && {
          rm -f $outfile
