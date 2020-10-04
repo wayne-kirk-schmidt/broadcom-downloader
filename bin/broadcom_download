@@ -131,7 +131,7 @@ download_and_unpack () {
        filesizecheck=$( du -sk $outfile 2>/dev/null | awk '{print$1}' )
        [[ $filesizecheck -ge 10240 ]] && {
          cd $dirstaging
-         unzip $outfile -d $dirstaging > /dev/null 2>&
+         unzip $outfile -d $dirstaging > /dev/null 2>&1
        }
        [[ $filesizecheck -lt 10240 ]] && {
          rm -f $outfile
