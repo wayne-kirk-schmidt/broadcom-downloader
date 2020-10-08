@@ -83,8 +83,8 @@ initialize_environment () {
     complain_and_exit 1 "script requires bash 4 or higher to run"
   }
 
-  mkdir -p ${dirdownload} ${dirzipfiles} ${dirlogfiles} ${diractivity} ${dirsumodata}
-  touch $sumologfile 
+  mkdir -p "${dirdownload}" "${dirzipfiles}" "${dirlogfiles}" "${diractivity}" "${dirsumodata}"
+  touch "${sumologfile}" 
 
 }
 
@@ -105,11 +105,11 @@ initialize_credentials () {
     complain_and_exit 6 "no supplied credentials"
   }
 
-  username=$( echo $credentials | awk -F: '{print$1}' )
+  username=$( echo "$credentials" | awk -F: '{print$1}' )
   authuser="X-APIUsername: $username"
   export authuser
 
-  password=$( echo $credentials | awk -F: '{print$2}' )
+  password=$( echo "$credentials" | awk -F: '{print$2}' )
   authpass="X-APIPassword: $password"
   export authpass
 
@@ -118,46 +118,46 @@ initialize_credentials () {
 process_gzipfile () {
 
   my_gzipfile=$1
-  gunzip ${my_gzipfile} > /dev/null
+  gunzip "${my_gzipfile}" > /dev/null
 
   my_logfile="${my_gzipfile%*.gz}"
-  my_logname=$( basename ${my_logfile} )
+  my_logname=$( basename "${my_logfile}" )
   my_sumofile="${dirsumodata}/${my_logname}"
 
-  my_logentries=$( egrep -i ${my_logname} ${sumologfile} | wc -l | xargs )
+  my_logentries=$( grep -c -i -E "${my_logname}" "${sumologfile}" | xargs )
   [[ ${my_logentries} -lt 1 ]] && {
-    mv -f ${my_logfile} ${my_sumofile}
-    update_logfile_entry ${my_sumofile}
+    mv -f "${my_logfile}" "${my_sumofile}"
+    update_logfile_entry "${my_sumofile}"
     [[ $webendpoint != "undefined" ]] && {
       "${curlcmd}" -s -F data=\@"${my_sumofile}" "${webendpoint}"
     }
   }
   [[ $my_logentries -ge 1 ]] && {
-    rm -f ${my_logfile}
+    rm -f "${my_logfile}"
   }
 }
 
 unpack_zipfiles () {
   target_zip=$1
-  unzip $target_zip -d $dirlogfiles > /dev/null 2>&1
-  rm -f $target_zip
+  unzip "${target_zip}" -d "${dirlogfiles}" > /dev/null 2>&1
+  rm -f "${target_zip}"
 }
 
 update_logfile_entry () {
 
   target_file=$1
-  my_log_file=$( basename ${target_file} )
-  my_log_size=$( du -sk $target_file 2>/dev/null | awk '{print$1}' | xargs )
+  my_log_file=$( basename "${target_file}" )
+  my_log_size=$( du -sk "${target_file}" 2>/dev/null | awk '{print$1}' | xargs )
   my_log_time=$(( $( stat -f %c "$target_file"  ) * 1000 ))
-  touch $sumologfile &&  printf "%s,%s,%s\n" $my_log_time $my_log_size $my_log_file >> $sumologfile
+  touch "${sumologfile}" &&  printf "%s,%s,%s\n" "$my_log_time" "$my_log_size" "$my_log_file" >> "${sumologfile}"
 
 }
 
 uncompress_logfiles () {
-  gzipfiles=$( ls -1d $dirlogfiles/*.gz )
+  gzipfiles=$( ls -1d "${dirlogfiles}"/*.gz )
   for gzipfile in ${gzipfiles}
     do
-      process_gzipfile $gzipfile
+      process_gzipfile "${gzipfile}"
     done
 }
 
@@ -174,15 +174,15 @@ download_and_unpack () {
 
   zipdownload="$dirzipfiles/broadcom_wss_events.$startdate.$finaldate.zip"
 
-  [ -f $zipdownload ] || {
+  [ -f "${zipdownload}" ] || {
     "${curlcmd}" -s -H "${authuser}" -H "${authpass}" "${urlbase}${urlopts}" -o "${zipdownload}"
     exitstatus=$?
     [[ $exitstatus -eq 0 ]] && {
-       unpack_zipfiles $zipdownload
+       unpack_zipfiles "${zipdownload}"
        uncompress_logfiles
     }
     [[ $exitstatus -eq 0 ]] || {
-      rm -f $zipdownload
+      rm -f "${zipdownload}"
     }
   }
 }
@@ -192,20 +192,20 @@ initialize_time_ranges () {
   ${debugflag}
 
   [[ $timerange = "undefined:undefined" ]] || {
-    startdate=$( echo $time_range | awk -F: '{print$1}' )
-    finaldate=$( echo $time_range | awk -F: '{print$2}' )
-    download_and_unpack $startdate $finaldate
+    startdate=$( echo "${time_range}" | awk -F: '{print$1}' )
+    finaldate=$( echo "${time_range}" | awk -F: '{print$2}' )
+    download_and_unpack "$startdate" "$finaldate"
   }
 
   [[ $timerange = "undefined:undefined" ]] && {
     finaldate=$(( $( gdate -d "$(date +%T)" +%s ) * 1000 ))
-    startdate=$(( $finaldate - $oneday ))
+    startdate=$(( "$finaldate" - "$oneday" ))
     for ((counter = 1 ; counter < $daylimit ; counter++)); 
     do
-      finaldate=$(( $finaldate - $oneday * $counter ))
-      startdate=$(( $startdate - $oneday * $counter ))
+      finaldate=$(( "$finaldate" - "$oneday" * "$counter" ))
+      startdate=$(( "$startdate" - "$oneday" * "$counter" ))
       download_and_unpack $startdate $finaldate
-      sleep $sleeptime
+      sleep "$sleeptime"
     done
   }
 
