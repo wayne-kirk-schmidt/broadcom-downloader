@@ -4,15 +4,14 @@
 ###
 ###	-h | --help		display this message and exit
 ###	-v | --verbose		provide extra comments for verbose output
-###	-d | --debug		run the script in complete verbose mode for debugging purposes
 ###
 ###	-k | --apikey		specify the API user and secret to authentication (XXXXX:YYYYY)
 ###
 ###	-t | --timerange	specify start and final times ( NNNNNNNNNNN:MMMMMMMMMMMM )
 ###	-n | --number		specify the number of days to compare against
 ###
-###	-a | --archivedir	specify where the zip files will be stored
-###	-s | --stagingdir	specify where the zip file image is unpacked
+###	-d | --dir_download	specify where the download files will be unpacked and staged
+###	-w | --web_endpoint	specify where the script will post all of the files processed
 ###
 ### Starting_Directory: BASEDIR
 ###
@@ -54,15 +53,19 @@ initialize_environment () {
   bindir=$( dirname "${actiondir}" )            	&& export bindir
   basedir=$( dirname "${bindir}" )             	 	&& export basedir
 
-  vardir="/var/tmp/downloads"				&& export vardir
-  dirstaging="${dir_staging:-"$vardir/staging"}"	&& export dirstaging
-  dirarchive="${dir_archive:-"$vardir/archive"}"	&& export dirarchive
+  dirdownload="${dir_download:-"/var/tmp/sumologic"}"	&& export dirdownload
+  dirzipfiles="$dirdownload/zipfiles"			&& export dirzipfiles
+  dirlogfiles="$dirdownload/logfiles"			&& export dirlogfiles
+  dirsumodata="$dirdownload/sumodata"			&& export dirsumodata
+  diractivity="$dirdownload/logs"			&& export diractivity
+  sumologfile="$diractivity/logfile.txt"		&& export sumologfile
+
+  webendpoint="${web_endpoint:-"undefined"}"		&& export webendpoint
 
   dstamp=$(date '+%Y%m%d')         			&& export dstamp
   tstamp=$(date '+%H%M%S')          			&& export tstamp
   lstamp="${dstamp}.${tstamp}"				&& export lstamp
 
-  verboseflag=${verboseflag:-"false"}			&& export verboseflag
   curlcmd=$( which curl )				&& export curlcmd
 
   daylimit="${num_days:-"7"}"				&& export daylimit
@@ -80,7 +83,7 @@ initialize_environment () {
     complain_and_exit 1 "script requires bash 4 or higher to run"
   }
 
-  mkdir -p ${vardir} ${dirstaging} ${dirarchive}
+  mkdir -p ${dirdownload} ${dirzipfiles} ${dirlogfiles} ${diractivity} ${dirsumodata}
 
 }
 
@@ -111,6 +114,44 @@ initialize_credentials () {
 
 }
 
+process_gzipfile () {
+
+  my_gzipfile=$1
+  gunzip ${my_gzipfile} > /dev/null
+
+  my_logfile="${my_gzipfile%*.gz}"
+  my_logname=$( basename ${my_logfile} )
+  my_sumofile="${dirsumodata}/${my_logname}"
+
+  mv ${my_logfile} ${my_sumofile}
+  sleep 3
+  update_logfile_entry ${my_sumofile}
+
+}
+
+unpack_zipfiles () {
+  target_zip=$1
+  unzip $target_zip -d $dirlogfiles > /dev/null 2>&1
+}
+
+update_logfile_entry () {
+
+  target_file=$1
+  my_log_file=$( basename ${target_file} )
+  my_log_size=$( du -sk $target_file 2>/dev/null | awk '{print$1}' )
+  my_log_time=$(( $( stat -f %c "$target_file"  ) * 1000 ))
+  touch $sumologfile &&  printf "%s,%s,%s\n" $my_log_time $my_log_size $my_log_file >> $sumologfile
+
+}
+
+uncompress_logfiles () {
+  gzipfiles=$( ls -1d $dirlogfiles/*.gz )
+  for gzipfile in ${gzipfiles}
+    do
+      process_gzipfile $gzipfile
+    done
+}
+
 download_and_unpack () {
 
   ${debugflag}
@@ -122,7 +163,7 @@ download_and_unpack () {
 
   urlopts="startDate=${startdate}&endDate=${finaldate}&token=none"
 
-  outfile="$dirarchive/broadcom_wss_events.$startdate.$finaldate.zip"
+  outfile="$dirzipfiles/broadcom_wss_events.$startdate.$finaldate.zip"
 
   [ -f $outfile ] || {
     "${curlcmd}" -s -H "${authuser}" -H "${authpass}" "${urlbase}${urlopts}" -o "${outfile}"
@@ -130,13 +171,8 @@ download_and_unpack () {
     [[ $exitstatus -eq 0 ]] && {
        filesizecheck=$( du -sk $outfile 2>/dev/null | awk '{print$1}' )
        [[ $filesizecheck -ge 10240 ]] && {
-         cd $dirstaging
-         unzip $outfile -d $dirstaging > /dev/null 2>&1
-         zipfiles=$( ls -1d $dirstaging/*.gz )
-         for zipfile in ${zipfiles}
-         do
-           gunzip -f $zipfile
-         done
+         unpack_zipfiles $outfile
+         uncompress_logfiles
        }
        [[ $filesizecheck -lt 10240 ]] && {
          rm -f $outfile
@@ -180,17 +216,16 @@ main_logic () {
 
 }
   
-while getopts "hvdk:t:n:a:s:" options;
+while getopts "hvk:t:n:d:w:" options;
 do
   case "${options}" in
     h) display_help ; exit 0 ;;
-    v) verboseflag='true'	; export verboseflag ;;
-    d) debugflag='set -x'	; export debugflag ;;
+    v) debugflag='set -x'	; export debugflag ;;
     k) api_key=$OPTARG		; export api_key ;;
     t) time_range=$OPTARG	; export time_range ;;
     n) num_days=$OPTARG		; export num_days ;;
-    a) dir_archive=$OPTARG	; export dir_archive ;;
-    s) dir_staging=$OPTARG	; export dir_staging ;;
+    d) dir_download=$OPTARG	; export dir_download ;;
+    w) web_endpoint=$OPTARG	; export web_endpoint ;;
     *) display_help ; exit 0 ;;
   esac
 done
