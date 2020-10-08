@@ -2,14 +2,14 @@
 Broadcom Download
 =================
 
-This is a small wrapper to manage the downloading, unpacking, and staging of broadcom log files
+This is a wrapper to download, stage, and publish Broadcom log files to Sumo Logic
 
 Installing the Scripts
 =======================
 
 Written in bash, this script is designed to be Unix agnostic and used in DevOps scripts.
 
-You will need to use Bash 4+ as some of the scripts use associative arrays in the scripts.
+Please ensure you have at least version 4+ of Bash installed
 
 Please follow the following steps to install:
 
@@ -44,20 +44,23 @@ Use Case Usage
 
 2. To specify the credentials to be used [ needed ]
 
-       ./download_import_files -k APIKEY:APISECRET
+       ./download_broadcom -k APIKEY:APISECRET
 
 3. To specify the timerange to be used
 
-       ./download_import_files -k APIKEY:APISECRET -t 12345667788987:124566788698
+       ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698
 
 4. To specify the script to be used in verbose and debug mode
 
-       ./download_import_files -k APIKEY:APISECRET -t 12345667788987:124566788698 -v -d
+       ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698 -v
+
+5. To publish the contents of the Broadcom logs to a Sumo Logic Web HTTP Endpoint
+
+       ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698 -v \
+         -w https://collectors.jp.sumologic.com/receiver/v1/http/<endpointaddress>
 
 To Do List:
 ===========
-
-* add a publish to a Sumo Logic Web endpoint
 
 License
 =======
