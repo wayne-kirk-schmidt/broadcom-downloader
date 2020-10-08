@@ -22,7 +22,7 @@ display_help () {
 
   scriptname=$( basename "$0" ) 
   startdir=$( ls -Ld "$PWD"  ) 
-  description="A wrapper for downloading and staging Broadcom log files"
+  description="A wrapper to download and stage/publish Broadcom logfiles to Sumo Logic"
 
   ( 
     grep -i -E '^###' | sed  's/^###//g' | \
@@ -130,6 +130,7 @@ process_gzipfile () {
     update_logfile_entry "${my_sumofile}"
     [[ $webendpoint != "undefined" ]] && {
       "${curlcmd}" -s -F data=\@"${my_sumofile}" "${webendpoint}"
+      rm -f "${my_sumofile}"
     }
   }
   [[ $my_logentries -ge 1 ]] && {
