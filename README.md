@@ -31,12 +31,30 @@ Please follow the following steps to install:
     
     5. Change into the this folder. 
 
-    6. Run the script:
+    6. See how to run the script in the "Common Usage"
 
-       ./bin/broadcom_download -h
+Preparation
+===========
 
-Use Case Usage
-==============
+This script can be run by itself or in conjunction with an installed collector.
+If you want to do this, you will need to install:
+
+1. An hosted collector
+
+   https://help.sumologic.com/03Send-Data/Hosted-Collectors
+
+2. An web source
+
+   https://help.sumologic.com/03Send-Data/Sources/02Sources-for-Hosted-Collectors
+
+3. Installed collector with a Script Source to run the script
+
+   https://help.sumologic.com/03Send-Data/Installed-Collectors
+
+   https://help.sumologic.com/03Send-Data/Sources/01Sources-for-Installed-Collectors/Script-Source
+
+Common Usage
+============
 
 1. To get the help page:
 
