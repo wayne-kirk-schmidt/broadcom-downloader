@@ -199,7 +199,8 @@ initialize_time_ranges () {
   }
 
   [[ $timerange = "undefined:undefined" ]] && {
-    finaldate=$(( $( gdate -d "$(date +%T)" +%s ) * 1000 ))
+    ### finaldate=$(( $( gdate -d "$(date +%T)" +%s ) * 1000 ))
+    finaldate=$(( $( stat -f %c "$sumologfile"  ) * 1000 ))
     startdate=$(( "$finaldate" - "$oneday" ))
     for ((counter = 1 ; counter < $daylimit ; counter++)); 
     do
