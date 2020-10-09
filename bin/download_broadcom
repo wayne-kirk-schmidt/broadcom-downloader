@@ -149,7 +149,7 @@ update_logfile_entry () {
   target_file=$1
   my_log_file=$( basename "${target_file}" )
   my_log_size=$( du -sk "${target_file}" 2>/dev/null | awk '{print$1}' | xargs )
-  my_log_time=$(( $( stat -f %c "$target_file"  ) * 1000 ))
+  my_log_time=$(( $( date +%s ) * 1000 ))
   touch "${sumologfile}" &&  printf "%s,%s,%s\n" "$my_log_time" "$my_log_size" "$my_log_file" >> "${sumologfile}"
 
 }
@@ -199,13 +199,12 @@ initialize_time_ranges () {
   }
 
   [[ $timerange = "undefined:undefined" ]] && {
-    ### finaldate=$(( $( gdate -d "$(date +%T)" +%s ) * 1000 ))
-    finaldate=$(( $( stat -f %c "$sumologfile"  ) * 1000 ))
-    startdate=$(( "$finaldate" - "$oneday" ))
+    finaldate=$(( $( date +%s ) * 1000 ))
+    startdate=$(( $finaldate - $oneday ))
     for ((counter = 1 ; counter < $daylimit ; counter++)); 
     do
-      finaldate=$(( "$finaldate" - "$oneday" * "$counter" ))
-      startdate=$(( "$startdate" - "$oneday" * "$counter" ))
+      finaldate=$(( $finaldate - $oneday * $counter ))
+      startdate=$(( $startdate - $oneday * $counter ))
       download_and_unpack $startdate $finaldate
       sleep "$sleeptime"
     done
