@@ -155,7 +155,7 @@ update_logfile_entry () {
 }
 
 uncompress_logfiles () {
-  gzipfiles=$( ls -1d $dirlogfiles/*.gz )
+  gzipfiles=$( ls -1d $dirlogfiles/*.gz 2>/dev/null )
   for gzipfile in ${gzipfiles}
     do
       process_gzipfile "${gzipfile}"
