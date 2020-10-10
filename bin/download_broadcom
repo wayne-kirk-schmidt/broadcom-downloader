@@ -57,14 +57,15 @@ initialize_environment () {
   dirzipfiles="$dirdownload/zipfiles"			&& export dirzipfiles
   dirlogfiles="$dirdownload/logfiles"			&& export dirlogfiles
   dirsumodata="$dirdownload/sumodata"			&& export dirsumodata
-  diractivity="$dirdownload/logs"			&& export diractivity
-  sumologfile="$diractivity/logfile.txt"		&& export sumologfile
 
   webendpoint="${web_endpoint:-"undefined"}"		&& export webendpoint
 
   dstamp=$(date '+%Y%m%d')         			&& export dstamp
   tstamp=$(date '+%H%M%S')          			&& export tstamp
   lstamp="${dstamp}.${tstamp}"				&& export lstamp
+
+  diractivity="$dirdownload/logs"			&& export diractivity
+  sumologfile="$diractivity/logfile.${dstamp}.csv"	&& export sumologfile
 
   curlcmd=$( which curl )				&& export curlcmd
 
@@ -124,7 +125,7 @@ process_gzipfile () {
   my_logname=$( basename "${my_logfile}" )
   my_sumofile="${dirsumodata}/${my_logname}"
 
-  my_logentries=$( grep -c -i -E "${my_logname}" "${sumologfile}" | xargs )
+  my_logentries=$( grep -c -i -E "${my_logname}" "$diractivity/*.*" 2>/dev/null | xargs )
   [[ ${my_logentries} -lt 1 ]] && {
     mv -f "${my_logfile}" "${my_sumofile}"
     update_logfile_entry "${my_sumofile}"
