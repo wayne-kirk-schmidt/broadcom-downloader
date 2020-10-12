@@ -15,6 +15,8 @@
 ###	-w | --web_endpoint	specify the HTTPS endpoint the script will send the files to
 ###	-r | --remove		removes staged data after posting to a web end point
 ###
+###	-s | --sleep		specify the amount of time to sleep between downloading the zip file
+###
 ###	example: https://collectors.jp.sumologic.com/receiver/v1/http/<endpointstring>
 ###
 ### Starting_Directory: BASEDIR
@@ -229,7 +231,7 @@ main_logic () {
 
 }
   
-while getopts "hvk:t:n:d:w:r" options;
+while getopts "hvk:t:n:d:w:r:s" options;
 do
   case "${options}" in
     h) display_help ; exit 0 ;;
@@ -240,6 +242,7 @@ do
     d) dir_download=$OPTARG	; export dir_download ;;
     w) web_endpoint=$OPTARG	; export web_endpoint ;;
     r) del_sumodata="yes"	; export del_sumodata ;;
+    s) sleep_time=$OPTARG	; export sleep_time ;;
     *) display_help ; exit 0 ;;
   esac
 done
