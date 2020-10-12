@@ -11,7 +11,9 @@
 ###	-n | --number		specify the number of days to compare against
 ###
 ###	-d | --dir_download	specify where the download files will be unpacked and staged
+###
 ###	-w | --web_endpoint	specify where the script will post all of the files processed
+###	-r | --remove		removes staged data after posting to a web end point
 ###
 ### Starting_Directory: BASEDIR
 ###
@@ -57,6 +59,8 @@ initialize_environment () {
   dirzipfiles="$dirdownload/zipfiles"			&& export dirzipfiles
   dirlogfiles="$dirdownload/logfiles"			&& export dirlogfiles
   dirsumodata="$dirdownload/sumodata"			&& export dirsumodata
+
+  deletesumodata="${del_sumodata:-"no"}"		&& export deletesumodata
 
   webendpoint="${web_endpoint:-"undefined"}"		&& export webendpoint
 
@@ -131,7 +135,9 @@ process_gzipfile () {
     update_logfile_entry "${my_sumofile}"
     [[ $webendpoint != "undefined" ]] && {
       "${curlcmd}" -s -F data=\@"${my_sumofile}" "${webendpoint}"
-      rm -f "${my_sumofile}"
+      [ "$deletesumodata" = "yes" ] && {
+        rm -f "${my_sumofile}"
+      }
     }
   }
   [[ $my_logentries -ge 1 ]] && {
@@ -221,7 +227,7 @@ main_logic () {
 
 }
   
-while getopts "hvk:t:n:d:w:" options;
+while getopts "hvk:t:n:d:w:r" options;
 do
   case "${options}" in
     h) display_help ; exit 0 ;;
@@ -231,6 +237,7 @@ do
     n) num_days=$OPTARG		; export num_days ;;
     d) dir_download=$OPTARG	; export dir_download ;;
     w) web_endpoint=$OPTARG	; export web_endpoint ;;
+    r) del_sumodata="yes"	; export del_sumodata ;;
     *) display_help ; exit 0 ;;
   esac
 done
