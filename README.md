@@ -53,6 +53,21 @@ If you want to do this, you will need to install:
 
    https://help.sumologic.com/03Send-Data/Sources/01Sources-for-Installed-Collectors/Script-Source
 
+4. IMPORTANT: for an installed collector to manage a script, we need to change the config file.
+
+   Within the config directory in the installation tree of the installed collector is a file: user.properties
+
+   You will need to edit this file and insert the following lines:
+
+   * enableActionSource=true
+
+   NOTE: Enabling ActionSource allows Sumo Logic to run a script as a response to an alert from a query.
+
+   * enableScriptSource=true
+
+   NOTE: Enabling ScriptSource allows to have a script as a data source, subject to Sumo Logic scheduling.
+
+
 Common Usage
 ============
 
@@ -72,10 +87,21 @@ Common Usage
 
        ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698 -v
 
-5. To publish the contents of the Broadcom logs to a Sumo Logic Web HTTP Endpoint
+5. To publish the contents of the Broadcom logs to a Sumo Logic Web HTTP Endpoint and keep the log files
 
        ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698 -v \
          -w https://collectors.jp.sumologic.com/receiver/v1/http/<endpointaddress>
+
+6. To publish the contents of the Broadcom logs to a Sumo Logic Web HTTP Endpoint and remove the log files
+
+       ./download_broadcom -k APIKEY:APISECRET -t 12345667788987:124566788698 -r -v \
+         -w https://collectors.jp.sumologic.com/receiver/v1/http/<endpointaddress>
+
+6. To retrieve the files for the last N days
+
+       ./download_broadcom -k APIKEY:APISECRET -v 
+
+NOTE: -v is to show the verbose output. You can skip usinig this to have the script run silently.
 
 To Do List:
 ===========
