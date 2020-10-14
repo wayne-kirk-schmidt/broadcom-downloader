@@ -212,7 +212,7 @@ initialize_time_ranges () {
   [[ $timerange = "undefined:undefined" ]] && {
     finaldate=$(( $( date +%s ) * 1000 ))
     startdate=$(( $finaldate - $oneday ))
-    for ((counter = 1 ; counter < $daylimit ; counter++)); 
+    for ((counter = 1 ; counter <= $daylimit ; counter++)); 
     do
       finaldate=$(( $finaldate - $oneday * $counter ))
       startdate=$(( $startdate - $oneday * $counter ))
