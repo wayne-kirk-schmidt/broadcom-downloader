@@ -231,7 +231,7 @@ main_logic () {
 
 }
   
-while getopts ":hvk:t:n:d:w:r:s:" options;
+while getopts ":hvk:t:n:d:w:s:r" options;
 do
   case "${options}" in
     h) display_help ; exit 0 ;;
@@ -241,8 +241,8 @@ do
     n) num_days=$OPTARG		; export num_days ;;
     d) dir_download=$OPTARG	; export dir_download ;;
     w) web_endpoint=$OPTARG	; export web_endpoint ;;
-    r) del_sumodata="yes"	; export del_sumodata ;;
     s) sleep_time=$OPTARG	; export sleep_time ;;
+    r) del_sumodata="yes"	; export del_sumodata ;;
     *) display_help ; exit 0 ;;
   esac
 done
