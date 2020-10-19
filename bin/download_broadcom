@@ -203,16 +203,15 @@ initialize_time_ranges () {
 
   ${debugflag}
 
-  [[ $timerange = "undefined:undefined" ]] || {
+  [[ "$timerange" != "undefined:undefined" ]] && {
     startdate=$( echo "${time_range}" | awk -F: '{print$1}' )
     finaldate=$( echo "${time_range}" | awk -F: '{print$2}' )
     download_and_unpack "$startdate" "$finaldate"
   }
-
-  [[ $timerange = "undefined:undefined" ]] && {
+  [[ "$timerange" = "undefined:undefined" ]] && {
     finaldate=$(( $( date +%s ) * 1000 ))
     startdate=$(( $finaldate - $oneday ))
-    for ((counter = 1 ; counter <= $daylimit ; counter++)); 
+    for ((counter = 1 ; counter <= $daylimit ; counter++));
     do
       finaldate=$(( $finaldate - $oneday * $counter ))
       startdate=$(( $startdate - $oneday * $counter ))
