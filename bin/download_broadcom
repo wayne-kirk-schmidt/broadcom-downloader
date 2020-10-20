@@ -88,10 +88,6 @@ initialize_environment () {
   PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
   export PATH
 
-  [[ ${BASH_VERSION%%.*} -ge 4 ]] || {
-    complain_and_exit 1 "script requires bash 4 or higher to run"
-  }
-
   mkdir -p "${dirdownload}" "${dirzipfiles}" "${dirlogfiles}" "${diractivity}" "${dirsumodata}"
   touch "${sumologfile}" 
 
